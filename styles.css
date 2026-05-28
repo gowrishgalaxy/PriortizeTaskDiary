@@ -313,3 +313,26 @@ dialog::backdrop { background-color: rgba(0,0,0,0.6); }
     background-color: rgba(128, 128, 128, 0.1);
 }
 
+.note-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0 0.3rem;
+    font-size: 1.1rem;
+    opacity: 0.4;
+    transition: opacity 0.2s;
+}
+.note-btn:hover {
+    opacity: 1;
+    background: transparent;
+}
+.note-btn.has-note {
+    opacity: 1;
+}
+#notes-modal textarea {
+    width: 100%;
+    min-height: 200px;
+    resize: vertical;
+    box-sizing: border-box;
+    margin-bottom: 1rem;
+}

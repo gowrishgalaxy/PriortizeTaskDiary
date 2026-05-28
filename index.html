@@ -109,6 +109,17 @@
             <button onclick="emptyRecycleBin()" style="background-color: var(--danger-color);">Empty Bin</button>
         </div>
     </dialog>
+
+    <!-- Modal for Notes -->
+    <dialog id="notes-modal">
+        <h3>Task Notes</h3>
+        <textarea id="notes-textarea" placeholder="Add your notes here..."></textarea>
+        <div class="modal-actions">
+            <button onclick="saveNote()">Update</button>
+            <button onclick="deleteNote()" style="background-color: var(--danger-color);">Delete Note</button>
+            <button onclick="closeNotesModal()" class="btn-cancel">Close</button>
+        </div>
+    </dialog>
     </main>
     <script src="app.js"></script>
 </body>

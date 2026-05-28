@@ -18,6 +18,8 @@ let recycleBin = JSON.parse(localStorage.getItem('recycleBin')) || [];
 let currentTopicIdForField = null;
 let currentSubtopicIdForField = null;
 let currentFieldForNewTopic = null;
+let currentNoteTopicId = null;
+let currentNoteSubtopicId = null;
 
 // Initialize application
 document.addEventListener('DOMContentLoaded', () => {
@@ -96,7 +98,8 @@ function addSubtopic(topicId) {
             date: dateVal,
             field: fieldVal,
             priority: priorityVal,
-            priorityNumber: 999999 // High number so it temporarily falls to the end
+            priorityNumber: 999999, // High number so it temporarily falls to the end
+            notes: ''
         });
         reorderPriorityNumbers(fieldVal); // Resequence cleanly
         input.value = '';
@@ -556,6 +559,7 @@ function renderToDo() {
                         <div class="subtopic-left">
                             <span class="drag-handle" title="Drag to move or reorder">⋮⋮</span>
                             <strong class="editable-text" contenteditable="true" onblur="editSubtopicName('${topic.id}', '${sub.id}', this.innerText)" onkeydown="if(event.key === 'Enter') { event.preventDefault(); this.blur(); }" title="Click to edit task name" style="padding: 0.2rem;">${sub.name}</strong>
+                            <button class="note-btn ${sub.notes ? 'has-note' : ''}" onclick="openNotesEditor('${topic.id}', '${sub.id}')" title="Edit Notes">🗒️</button>
                         </div>
                         <div class="subtopic-right">
                             <input type="date" value="${sub.date}" onchange="updateSubtopic('${topic.id}', '${sub.id}', 'date', this.value)">
@@ -672,7 +676,7 @@ function addPrioritizeTask(fieldName) {
     if (name && topicId && topicId !== '__CREATE_NEW_TOPIC__') {
         const topic = topics.find(t => t.id === topicId);
         if (topic) {
-            topic.subtopics.push({ id: generateId(), name, date: new Date().toISOString().split('T')[0], field: fieldName, priority: priorityVal, priorityNumber: 999999 });
+            topic.subtopics.push({ id: generateId(), name, date: new Date().toISOString().split('T')[0], field: fieldName, priority: priorityVal, priorityNumber: 999999, notes: '' });
             reorderPriorityNumbers(fieldName);
             saveState();
             renderToDo();
@@ -753,6 +757,7 @@ function renderPrioritize() {
                             <span class="drag-handle" title="Drag to move or reorder">⋮⋮</span>
                             <input type="number" id="prioritize-num-${task.id}" class="item-priority priority-number-input" min="1" value="${task.priorityNumber || 1}" onchange="updateSubtopic('${task.topicId}', '${task.id}', 'priorityNumber', this.value)" title="Priority number">
                             <strong class="editable-text" contenteditable="true" onblur="editSubtopicName('${task.topicId}', '${task.id}', this.innerText)" onkeydown="if(event.key === 'Enter') { event.preventDefault(); this.blur(); }" title="Click to edit task name" style="padding: 0.2rem;">${task.name}</strong> 
+                            <button class="note-btn ${task.notes ? 'has-note' : ''}" onclick="openNotesEditor('${task.topicId}', '${task.id}')" title="Edit Notes">🗒️</button>
                         </div>
                         <div class="subtopic-right">
                             <span class="field-badge" style="background-color: ${f.color || FIELD_COLORS[0]}20; color: ${f.color || FIELD_COLORS[0]}; border: 1px solid ${f.color || FIELD_COLORS[0]};">${task.field}</span>
@@ -827,6 +832,44 @@ function updateDiaryEntryText(id, newText) {
         saveState();
     }
     renderDiary();
+}
+
+// --- Notes Logic ---
+function openNotesEditor(topicId, subtopicId) {
+    currentNoteTopicId = topicId;
+    currentNoteSubtopicId = subtopicId;
+    const topic = topics.find(t => t.id === topicId);
+    if (topic) {
+        const subtopic = topic.subtopics.find(s => s.id === subtopicId);
+        if (subtopic) {
+            document.getElementById('notes-textarea').value = subtopic.notes || '';
+            document.getElementById('notes-modal').showModal();
+        }
+    }
+}
+
+function closeNotesModal() {
+    document.getElementById('notes-modal').close();
+    currentNoteTopicId = null;
+    currentNoteSubtopicId = null;
+}
+
+function saveNote() {
+    if (currentNoteTopicId && currentNoteSubtopicId) {
+        const newNotes = document.getElementById('notes-textarea').value;
+        updateSubtopic(currentNoteTopicId, currentNoteSubtopicId, 'notes', newNotes);
+    }
+    closeNotesModal();
+}
+
+function deleteNote() {
+    if (confirm("Are you sure you want to delete this note?")) {
+        if (currentNoteTopicId && currentNoteSubtopicId) {
+            // Setting notes to an empty string effectively deletes it
+            updateSubtopic(currentNoteTopicId, currentNoteSubtopicId, 'notes', '');
+        }
+        closeNotesModal();
+    }
 }
 
 // --- Recycle Bin Logic ---

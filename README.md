@@ -8,7 +8,7 @@ A comprehensive, client-side personal productivity application that combines a h
 - **Hierarchical Structure:** Organize your tasks under different **Topics**.
 - **Topic Management:** Create, delete, and rename topics with a simple click.
 - **Topic Prioritization:** Assign priority numbers to your topics and reorder them via drag-and-drop or by editing the number.
-- **Task Management:** Add, edit, and delete subtasks (tasks) within each topic.
+- **Task Management:** Add, edit, and delete subtasks (tasks) within each topic. Each task can have its own private notes.
 - **Rich Task Details:** Assign a due date, a priority level (P1-P5), and a 'Field' to each task.
 - **Intuitive Reordering:** Use drag-and-drop to reorder tasks within a topic or move them to a completely different topic.
 - **Flexible Sorting:** Sort topics and tasks by name, date, or priority.
@@ -19,6 +19,7 @@ A comprehensive, client-side personal productivity application that combines a h
 - **Visual Prioritization:** Drag-and-drop entire field columns to re-prioritize your workflow.
 - **Task Prioritization:** Drag-and-drop tasks vertically within a column to set their priority number automatically.
 - **Seamless Task Movement:** Move tasks between different fields with a simple drag-and-drop action.
+- **Task Notes:** Click the note icon (🗒️) on any task to add, edit, or delete detailed notes in a popup editor.
 - **Direct Task Creation:** Quickly add new tasks directly into any field column without leaving the page.
 - **Dynamic Sorting:** Sort tasks within each column by priority number, P1-P5 rating, or name.
 
