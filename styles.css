@@ -329,10 +329,28 @@ dialog::backdrop { background-color: rgba(0,0,0,0.6); }
 .note-btn.has-note {
     opacity: 1;
 }
-#notes-modal textarea {
+#notes-modal {
+    width: 90%;
+    max-width: 800px;
+}
+#notes-textarea {
     width: 100%;
-    min-height: 200px;
+    min-height: 400px;
     resize: vertical;
     box-sizing: border-box;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.5rem;
+    overflow-y: auto;
 }
+#notes-textarea[data-placeholder]:empty::before {
+    content: attr(data-placeholder);
+    color: var(--text-muted);
+}
+#notes-textarea a {
+    color: #3a86ff;
+    text-decoration: underline;
+}
+

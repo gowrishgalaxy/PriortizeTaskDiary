@@ -71,8 +71,8 @@
             </div>
             <div class="controls">
                 <select id="diary-sort" onchange="renderDiary()">
-                    <option value="newest">Sort: Newest First</option>
-                    <option value="oldest">Sort: Oldest First</option>
+                <option value="desc">Sort by Date: Descending (Newest)</option>
+                <option value="asc">Sort by Date: Ascending (Oldest)</option>
                 </select>
             </div>
             <div id="diary-entries-container"></div>
@@ -113,7 +113,13 @@
     <!-- Modal for Notes -->
     <dialog id="notes-modal">
         <h3>Task Notes</h3>
-        <textarea id="notes-textarea" placeholder="Add your notes here..."></textarea>
+        <div id="notes-textarea" contenteditable="true" data-placeholder="Add your notes here..."></div>
+        <div class="emoji-toolbar" style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
+            <button onclick="insertEmoji('✅ ', 'notes-textarea')" class="btn-cancel" style="padding: 0.2rem 0.5rem; font-size: 0.85rem;" title="Done/Complete">✅ Done</button>
+            <button onclick="insertEmoji('❌ ', 'notes-textarea')" class="btn-cancel" style="padding: 0.2rem 0.5rem; font-size: 0.85rem;" title="Cancelled/Failed">❌ Cancelled</button>
+            <button onclick="insertEmoji('⌛ ', 'notes-textarea')" class="btn-cancel" style="padding: 0.2rem 0.5rem; font-size: 0.85rem;" title="Waiting/Pending">⌛ Waiting</button>
+            <button onclick="insertEmoji('📅 ', 'notes-textarea')" class="btn-cancel" style="padding: 0.2rem 0.5rem; font-size: 0.85rem;" title="Postponed/Delayed">📅 Postponed</button>
+        </div>
         <div class="modal-actions">
             <button onclick="saveNote()">Update</button>
             <button onclick="deleteNote()" style="background-color: var(--danger-color);">Delete Note</button>

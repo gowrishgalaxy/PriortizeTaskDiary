@@ -20,6 +20,8 @@ let currentSubtopicIdForField = null;
 let currentFieldForNewTopic = null;
 let currentNoteTopicId = null;
 let currentNoteSubtopicId = null;
+let currentTopicIdForNewTopic = null;
+let currentSubtopicIdForNewTopic = null;
 
 // Initialize application
 document.addEventListener('DOMContentLoaded', () => {
@@ -233,20 +235,26 @@ function deleteField(fieldName) {
         return;
     }
     
-    const fallbackField = fields.find(f => f.name !== fieldName).name;
-    
     const fieldToDelete = fields.find(f => f.name === fieldName);
     if (fieldToDelete) {
-        // Send to recycle bin
-        recycleBin.push({ id: generateId(), type: 'field', data: fieldToDelete, deletedAt: new Date().toISOString() });
-        fields = fields.filter(f => f.name !== fieldName);
+        let deletedSubtopics = [];
         
-        // Safely move all existing tasks out of this field into the fallback field
-        topics.forEach(t => t.subtopics.forEach(s => {
-            if (s.field === fieldName) {
-                s.field = fallbackField;
-            }
-        }));
+        // Remove all tasks that belong to this field
+        topics.forEach(t => {
+            const subtopicsToKeep = [];
+            t.subtopics.forEach(s => {
+                if (s.field === fieldName) {
+                    deletedSubtopics.push({ topicId: t.id, data: s });
+                } else {
+                    subtopicsToKeep.push(s);
+                }
+            });
+            t.subtopics = subtopicsToKeep;
+        });
+
+        // Send to recycle bin
+        recycleBin.push({ id: generateId(), type: 'field', data: fieldToDelete, deletedSubtopics, deletedAt: new Date().toISOString() });
+        fields = fields.filter(f => f.name !== fieldName);
         
         reorderFieldPriorityNumbers();
         saveState();
@@ -287,6 +295,27 @@ function updateSubtopic(topicId, subtopicId, key, value) {
     const topic = topics.find(t => t.id === topicId);
     const subtopic = topic.subtopics.find(s => s.id === subtopicId);
     
+    if (key === 'topicId') {
+        if (value === '__CREATE_NEW_TOPIC__') {
+            currentTopicIdForNewTopic = topicId;
+            currentSubtopicIdForNewTopic = subtopicId;
+            document.getElementById('new-topic-modal').showModal();
+            renderPrioritize(); // Revert select briefly
+            return;
+        }
+        if (value !== topicId) {
+            topic.subtopics = topic.subtopics.filter(s => s.id !== subtopicId);
+            const newTopic = topics.find(t => t.id === value);
+            if (newTopic) {
+                newTopic.subtopics.push(subtopic);
+            }
+            saveState();
+            renderToDo();
+            renderPrioritize();
+        }
+        return;
+    }
+
     if (key === 'field') {
         if (value === '__CREATE_NEW__') {
             currentTopicIdForField = topicId;
@@ -648,6 +677,8 @@ function closeTopicModal() {
         }
     }
     currentFieldForNewTopic = null;
+    currentTopicIdForNewTopic = null;
+    currentSubtopicIdForNewTopic = null;
 }
 
 function showPrioritizeTaskInput(fieldName) {
@@ -760,8 +791,18 @@ function renderPrioritize() {
                             <button class="note-btn ${task.notes ? 'has-note' : ''}" onclick="openNotesEditor('${task.topicId}', '${task.id}')" title="Edit Notes">🗒️</button>
                         </div>
                         <div class="subtopic-right">
-                            <span class="field-badge" style="background-color: ${f.color || FIELD_COLORS[0]}20; color: ${f.color || FIELD_COLORS[0]}; border: 1px solid ${f.color || FIELD_COLORS[0]};">${task.field}</span>
-                            <span class="priority-badge ${task.priority.toLowerCase()}">${task.priority}</span>
+                            <select onchange="updateSubtopic('${task.topicId}', '${task.id}', 'topicId', this.value)" style="font-size: 0.8rem; padding: 0.2rem; border-radius: 4px; max-width: 90px;" title="Change Topic">
+                                ${topics.map(t => `<option value="${t.id}" ${task.topicId === t.id ? 'selected' : ''}>${t.name}</option>`).join('')}
+                                <option value="__CREATE_NEW_TOPIC__">+ New Topic</option>
+                            </select>
+                            <select onchange="updateSubtopic('${task.topicId}', '${task.id}', 'field', this.value)" style="background-color: ${f.color || FIELD_COLORS[0]}20; color: ${f.color || FIELD_COLORS[0]}; border: 1px solid ${f.color || FIELD_COLORS[0]}; font-size: 0.8rem; padding: 0.2rem; border-radius: 4px; max-width: 90px;" title="Change Field">
+                                ${fields.map(fld => `<option value="${fld.name}" ${task.field === fld.name ? 'selected' : ''}>${fld.name}</option>`).join('')}
+                                <option value="__CREATE_NEW__">+ New</option>
+                            </select>
+                            <select onchange="updateSubtopic('${task.topicId}', '${task.id}', 'priority', this.value)" class="priority-badge ${task.priority.toLowerCase()}" style="font-size: 0.8rem; padding: 0.2rem; cursor: pointer; border: none; outline: none; margin-left: 0.2rem;" title="Change Priority">
+                                ${['P1', 'P2', 'P3', 'P4', 'P5'].map(p => `<option value="${p}" ${task.priority === p ? 'selected' : ''}>${p}</option>`).join('')}
+                            </select>
+                            <button onclick="deleteSubtopic('${task.topicId}', '${task.id}')" style="background-color: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); padding: 0.2rem 0.4rem; margin-left: 0.2rem;" title="Delete Task">X</button>
                         </div>
                     </div>
                 `).join('')}
@@ -796,7 +837,7 @@ function renderDiary() {
     const sortBy = document.getElementById('diary-sort').value;
     
     let entries = [...diaryEntries];
-    entries.sort((a, b) => sortBy === 'newest' ? new Date(b.date) - new Date(a.date) : new Date(a.date) - new Date(b.date));
+    entries.sort((a, b) => (sortBy === 'desc' || sortBy === 'newest') ? new Date(b.date) - new Date(a.date) : new Date(a.date) - new Date(b.date));
 
     if (entries.length === 0) {
         container.innerHTML = '<div class="empty-state">No diary entries found. Write your first entry above!</div>';
@@ -805,11 +846,13 @@ function renderDiary() {
 
     container.innerHTML = entries.map(entry => `
         <div class="topic-card" style="border-left: 4px solid var(--primary-color);">
-            <div style="font-weight: 600; color: var(--text-muted); margin-bottom: 0.2rem;">
-                ${new Date(entry.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.2rem;">
+                <div style="font-weight: 600; color: var(--text-muted);">
+                    ${new Date(entry.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </div>
+                <button onclick="deleteDiaryEntry('${entry.id}')" style="background-color: transparent; color: var(--danger-color); border: none; padding: 0.1rem; font-size: 0.9rem; cursor: pointer; line-height: 1;" title="Delete Entry">🗑️</button>
             </div>
             <div class="editable-text" style="white-space: pre-wrap; line-height: 1.6; padding: 0.4rem; min-height: 1.5em; border-radius: 4px;" contenteditable="true" onblur="updateDiaryEntryText('${entry.id}', this.innerText)" title="Click to edit diary entry">${entry.text}</div>
-            <button onclick="deleteDiaryEntry('${entry.id}')" style="margin-top: 0.2rem; background-color: var(--danger-color); padding: 0.2rem 0.6rem; font-size: 0.85rem;">Delete Entry</button>
         </div>
     `).join('');
 }
@@ -842,8 +885,39 @@ function openNotesEditor(topicId, subtopicId) {
     if (topic) {
         const subtopic = topic.subtopics.find(s => s.id === subtopicId);
         if (subtopic) {
-            document.getElementById('notes-textarea').value = subtopic.notes || '';
+                const notesEl = document.getElementById('notes-textarea');
+                let notesContent = subtopic.notes || '';
+                
+                // Convert legacy plain text notes to HTML format to preserve formatting
+                if (notesContent && !/<[a-z][\s\S]*>/i.test(notesContent)) {
+                    const urlRegex = /(https?:\/\/[^\s]+)/g;
+                    notesContent = notesContent
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(urlRegex, url => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`)
+                        .replace(/\n/g, '<br>');
+                }
+
+                if (notesEl.tagName === 'TEXTAREA') {
+                    notesEl.value = subtopic.notes || '';
+                } else {
+                    notesEl.innerHTML = notesContent;
+                }
             document.getElementById('notes-modal').showModal();
+        }
+    }
+}
+
+function insertEmoji(emoji, targetId) {
+    const textarea = document.getElementById(targetId);
+    if (textarea) {
+        if (textarea.tagName === 'TEXTAREA') {
+            textarea.setRangeText(emoji, textarea.selectionStart, textarea.selectionEnd, 'end');
+            textarea.focus();
+        } else {
+            textarea.focus();
+            document.execCommand('insertText', false, emoji);
         }
     }
 }
@@ -856,7 +930,34 @@ function closeNotesModal() {
 
 function saveNote() {
     if (currentNoteTopicId && currentNoteSubtopicId) {
-        const newNotes = document.getElementById('notes-textarea').value;
+        const notesEl = document.getElementById('notes-textarea');
+        let newNotes = notesEl.tagName === 'TEXTAREA' ? notesEl.value : notesEl.innerHTML;
+        
+        // Auto-linkify any newly typed URLs
+        if (notesEl.tagName !== 'TEXTAREA') {
+            const temp = document.createElement('div');
+            temp.innerHTML = newNotes;
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            
+            function traverse(node) {
+                if (node.nodeType === 3) { 
+                    if (urlRegex.test(node.nodeValue)) {
+                        const fragment = document.createDocumentFragment();
+                        const div = document.createElement('div');
+                        div.innerHTML = node.nodeValue.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(urlRegex, url => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
+                        while (div.firstChild) {
+                            fragment.appendChild(div.firstChild);
+                        }
+                        node.parentNode.replaceChild(fragment, node);
+                    }
+                } else if (node.nodeType === 1 && node.tagName !== 'A') { 
+                    Array.from(node.childNodes).forEach(traverse);
+                }
+            }
+            
+            Array.from(temp.childNodes).forEach(traverse);
+            newNotes = temp.innerHTML;
+        }
         updateSubtopic(currentNoteTopicId, currentNoteSubtopicId, 'notes', newNotes);
     }
     closeNotesModal();
@@ -929,6 +1030,22 @@ function restoreItem(id) {
     } else if (item.type === 'field') {
         fields.push(item.data);
         reorderFieldPriorityNumbers();
+        
+        if (item.deletedSubtopics) {
+            let missingTopics = false;
+            item.deletedSubtopics.forEach(ds => {
+                const topic = topics.find(t => t.id === ds.topicId);
+                if (topic) {
+                    topic.subtopics.push(ds.data);
+                } else {
+                    missingTopics = true;
+                }
+            });
+            reorderPriorityNumbers(item.data.name);
+            if (missingTopics) {
+                alert("Some tasks could not be restored because their original topics have been deleted.");
+            }
+        }
     }
 
     recycleBin.splice(index, 1);
@@ -968,15 +1085,50 @@ function importData(event) {
         try {
             const data = JSON.parse(e.target.result);
             if (data.topics && data.fields) {
-                topics = data.topics;
-                fields = data.fields;
-                diaryEntries = data.diaryEntries || [];
-                recycleBin = data.recycleBin || [];
+                // Merge Fields
+                data.fields.forEach(importedField => {
+                    if (!fields.some(f => f.name === importedField.name)) {
+                        fields.push(importedField);
+                    }
+                });
+
+                // Merge Topics and Subtopics
+                data.topics.forEach(importedTopic => {
+                    const existingTopic = topics.find(t => t.id === importedTopic.id);
+                    if (existingTopic) {
+                        importedTopic.subtopics.forEach(importedSubtopic => {
+                            if (!existingTopic.subtopics.some(s => s.id === importedSubtopic.id)) {
+                                existingTopic.subtopics.push(importedSubtopic);
+                            }
+                        });
+                    } else {
+                        topics.push(importedTopic);
+                    }
+                });
+
+                // Merge Diary Entries
+                if (data.diaryEntries) {
+                    data.diaryEntries.forEach(importedEntry => {
+                        if (!diaryEntries.some(e => e.id === importedEntry.id)) {
+                            diaryEntries.push(importedEntry);
+                        }
+                    });
+                }
+
+                // Merge Recycle Bin
+                if (data.recycleBin) {
+                    data.recycleBin.forEach(importedBinItem => {
+                        if (!recycleBin.some(b => b.id === importedBinItem.id)) {
+                            recycleBin.push(importedBinItem);
+                        }
+                    });
+                }
+
                 saveState();
                 renderToDo();
                 renderPrioritize();
                 renderDiary();
-                alert("Data imported successfully!");
+                alert("Data imported and merged successfully!");
             } else {
                 alert("Invalid backup file format. Missing topics or fields.");
             }
