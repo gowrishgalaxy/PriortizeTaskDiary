@@ -847,8 +847,9 @@ function renderDiary() {
     container.innerHTML = entries.map(entry => `
         <div class="topic-card" style="border-left: 4px solid var(--primary-color);">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.2rem;">
-                <div style="font-weight: 600; color: var(--text-muted);">
-                    ${new Date(entry.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                <div style="font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="date" value="${entry.date}" onchange="updateDiaryEntryDate('${entry.id}', this.value)" style="border: none; background: transparent; color: inherit; font-family: inherit; font-weight: inherit; font-size: 1rem; cursor: pointer; outline: none; padding: 0;" title="Edit Date">
+                    <span style="font-size: 0.85rem; font-weight: 400;">(${new Date(entry.date).toLocaleDateString(undefined, { weekday: 'long' })})</span>
                 </div>
                 <button onclick="deleteDiaryEntry('${entry.id}')" style="background-color: transparent; color: var(--danger-color); border: none; padding: 0.1rem; font-size: 0.9rem; cursor: pointer; line-height: 1;" title="Delete Entry">🗑️</button>
             </div>
@@ -875,6 +876,16 @@ function updateDiaryEntryText(id, newText) {
         saveState();
     }
     renderDiary();
+}
+
+function updateDiaryEntryDate(id, newDate) {
+    if (!newDate) return;
+    const entry = diaryEntries.find(e => e.id === id);
+    if (entry && entry.date !== newDate) {
+        entry.date = newDate;
+        saveState();
+        renderDiary();
+    }
 }
 
 // --- Notes Logic ---

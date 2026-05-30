@@ -2,7 +2,36 @@
 
 A comprehensive, client-side personal productivity application that combines a hierarchical ToDo list, a priority-based Kanban board, and a daily diary. All your data is stored locally in your browser, ensuring privacy and speed.
 
-*(Add a screenshot of the application here)*
+## 🧠 How It Works (Application Architecture)
+
+```mermaid
+graph TD
+    User((User)) --> App[Prioritize Task Diary]
+    App --> Storage[(Browser Local Storage)]
+    
+    App --> Nav{Core Sections}
+    Nav --> ToDo[📝 ToDo Page]
+    Nav --> Prioritize[🚀 Prioritize Page]
+    Nav --> Diary[📖 Diary Page]
+    
+    ToDo --> T_Topic[Create Topics]
+    T_Topic --> T_Task[Add Tasks / Subtopics]
+    T_Task --> T_Meta[Assign: Due Date, Priority, Field, Notes]
+    
+    Prioritize --> P_Field[Custom Fields / Kanban Columns]
+    P_Field --> P_Drag[Drag & Drop Prioritization]
+    P_Drag --> P_Sync[(Syncs seamlessly with ToDo state)]
+    
+    Diary --> D_Entry[Daily Journal Entries]
+    D_Entry --> D_Meta[Editable Dates & Inline Editing]
+    
+    App --> Global[🌍 Global Operations]
+    Global --> Recycle[🗑️ Recycle Bin / Cascading Deletes]
+    Global --> Backup[📥 Smart Merge Import / 📤 Full Export]
+    Global --> Theme[🌓 Dark & Light Themes]
+    
+    Storage -.->|Persists & loads data automatically| App
+```
 
 ## ✨ Features
 
@@ -31,7 +60,8 @@ A comprehensive, client-side personal productivity application that combines a h
 
 ### 📖 Diary Page
 - **Daily Journaling:** Create and save diary entries for any date.
-- **Inline Editing:** Click directly on an entry's text to seamlessly edit it inline.
+- **Inline Editing:** Click directly on an entry's text to seamlessly edit its content inline.
+- **Editable Dates:** Easily change the date of any past entry using the integrated date picker, and your entries will automatically re-sort.
 - **Chronological Sorting:** Sort your entries by Date Descending (Newest First) or Date Ascending (Oldest First).
 
 ### 🌍 Global Features & Data Security
